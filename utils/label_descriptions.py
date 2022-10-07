@@ -1,31 +1,42 @@
 std_label_table = {
     'shipping': 0,
     'product': 1,
-    'processing': 2
+    'processing': 2,
+    'etc': 3,
 }
 
 efl_category_label_descriptions = {
     'shipping': '이것은 배송 관련 문장입니다.',
     'product': '이것은 제품 관련 문장입니다.',
-    'processing': '이것은 처리 관련 문장입니다.'
+    'processing': '이것은 처리 관련 문장입니다.',
+    'etc': '이것은 배송 제품 처리와 관련 없는 문장입니다.',
 }
 
 scl_label_table = {
     'shipping': {
         'shipping': 0,
         'product': 1,
-        'processing': 2
+        'processing': 2,
+        'etc': 3,
     },
     'product': {
-        'shipping': 3,
-        'product': 4,
-        'processing': 5
+        'shipping': 4,
+        'product': 5,
+        'processing': 6,
+        'etc': 7,
     },
     'processing': {
-        'shipping': 6,
-        'product': 7,
-        'processing': 8
-    }
+        'shipping': 8,
+        'product': 9,
+        'processing': 10,
+        'etc': 11,
+    },
+    'etc': {
+        'shipping': 12,
+        'product': 13,
+        'processing': 14,
+        'etc': 15,
+    },
 }
 
 std_sentiment_label_table = {

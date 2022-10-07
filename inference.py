@@ -28,9 +28,9 @@ def get_arguments():
     parser.add_argument('--method', type=str, default='efl_scl', choices=('efl', 'efl_scl', 'std', 'std_scl'))
     parser.add_argument('--model_name_or_path', type=str, default='./model/checkpoint-2000000')
     parser.add_argument('--category_saved_model_path', type=str,
-                        default='./model/saved_model/STEP_600_efl_scl_TASKcategory_LR5e-05_WD0.1_LAMBDA0.1_POOLERcls_TEMP0.15_ACC0.8231')
+                        default='./model/saved_model/all_category_model_9_1/STEP_1300_efl_scl_TASKcategory_LR1e-05_WD0.1_LAMBDA0.1_POOLERcls_TEMP0.15_ACC0.7373')
     parser.add_argument('--sentiment_saved_model_path', type=str,
-                        default='./model/saved_model/STEP_1200_efl_scl_TASKsentiment_LR5e-05_WD0.1_LAMBDA0.9_POOLERcls_TEMP0.05_ACC0.8572')
+                        default='./model/saved_model/sentiment_model_9_1/STEP_1200_efl_scl_TASKsentiment_LR1e-05_WD0.1_LAMBDA0.9_POOLERcls_TEMP0.25_ACC0.8450')
     parser.add_argument('--vocab_path', type=str, default='./tokenizer/version_1.9')
     parser.add_argument('--max_len', type=int, default=256)
     parser.add_argument('--batch_size', type=int, default=256)
@@ -109,24 +109,16 @@ def get_efl_predict_dataloader(args, task, tokenizer, mecab, sents):
                       batch_size=args.batch_size)
 
 
-def predict(args, tokenizer, sentiment_model, category_model, mecab, row):
+def predict(args, tokenizer, sentiment_model, category_model, mecab, text):
     sentiment_model.eval()
     category_model.eval()
 
-    sents = split_sentences(row['text'])
-    new_sent = ''
-    new_sents = []
-    for sent in sents:
-        new_sent += ' ' + sent
-        if len(new_sent) >= 50:
-            new_sent = new_sent.strip()
-            new_sents.append(new_sent)
-            new_sent = ''
+    sents = split_sentences(text)
 
     num_sentiment_label_descriptions = len(efl_sentiment_label_descriptions)
     num_category_label_descriptions = len(efl_category_label_descriptions)
 
-    sentiment_dataloader = get_efl_predict_dataloader(args, 'sentiment', tokenizer, mecab, new_sents)
+    sentiment_dataloader = get_efl_predict_dataloader(args, 'sentiment', tokenizer, mecab, sents)
 
     # 불만/일반 감성분석
     sentiment_prediction_probs = []  # [sentence_length * 2, 2]
@@ -175,16 +167,18 @@ def predict(args, tokenizer, sentiment_model, category_model, mecab, row):
     category_score = [0, 0, 0, 0]
     category_preds = []
     for idx in range(num_negative_sents):
-        flag = False
-        flag_list = [0 if not_entail_prob > entail_prob else 1
-                     for not_entail_prob, entail_prob in category_prediction_probs[idx]]
-        if sum(flag_list) == 0:
-            flag = True
+        # flag = False
+        # flag_list = [0 if not_entail_prob > entail_prob else 1
+        #              for not_entail_prob, entail_prob in category_prediction_probs[idx]]
+        # if sum(flag_list) == 0:
+        #     flag = True
+        #
+        # if flag:
+        #     pred = 3
+        # else:
+        #     pred = np.argmax(category_prediction_probs[idx, :, 1].squeeze())
 
-        if flag:
-            pred = 3
-        else:
-            pred = np.argmax(category_prediction_probs[idx, :, 1].squeeze())
+        pred = np.argmax(category_prediction_probs[idx, :, 1].squeeze())
 
         category_score[pred] += 1
         idx_to_label = {0: 'shipping', 1: 'product', 2: 'processing', 3: 'etc'}
@@ -226,7 +220,7 @@ def main(args):
     label_to_idx = {'shipping': 0, 'product': 1, 'processing': 2, 'etc': 3}
     pred_list = []
     for idx, row in tqdm(test_df.iterrows(), total=len(test_df)):
-        is_positive, category = predict(args, tokenizer, sentiment_model, category_model, mecab, row)
+        is_positive, category = predict(args, tokenizer, sentiment_model, category_model, mecab, row['text'])
         pred_list.append(category.reshape(category.shape[0]).tolist())
 
     result_df = pd.DataFrame()

@@ -218,11 +218,9 @@ def _get_efl_cs_sharing_dataset(args):
     train_df = pd.read_csv(args.path_to_train_data)
     valid_df = pd.read_csv(args.path_to_valid_data)
 
-    train_positive_mask = train_df['emotional'].isnull()
-    # train_positive_mask = train_df['emotional'] == 'nan'
+    train_positive_mask = train_df['emotional'] != '불만'
     train_negative_mask = train_df['emotional'] == '불만'
-    valid_positive_mask = valid_df['emotional'].isnull()
-    # valid_positive_mask = valid_df['emotional'] == 'nan'
+    valid_positive_mask = valid_df['emotional'] != '불만'
     valid_negative_mask = valid_df['emotional'] == '불만'
 
     train_data['negative'] = train_df.loc[train_negative_mask]['text'].values.tolist()
@@ -281,9 +279,9 @@ def _get_std_cs_sharing_dataset(args):
     train_df = pd.read_csv(args.path_to_train_data)
     valid_df = pd.read_csv(args.path_to_valid_data)
 
-    train_positive_mask = train_df['emotional'].isnull()
+    train_positive_mask = train_df['emotional'] != '불만'
     train_negative_mask = train_df['emotional'] == '불만'
-    valid_positive_mask = valid_df['emotional'].isnull()
+    valid_positive_mask = valid_df['emotional'] != '불만'
     valid_negative_mask = valid_df['emotional'] == '불만'
 
     train_data['negative'] = train_df.loc[train_negative_mask]['text'].values.tolist()
