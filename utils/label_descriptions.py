@@ -6,10 +6,10 @@ std_label_table = {
 }
 
 efl_category_label_descriptions = {
-    'shipping': '이것은 배송 관련 문장입니다.',
-    'product': '이것은 제품 관련 문장입니다.',
-    'processing': '이것은 처리 관련 문장입니다.',
-    'etc': '이것은 배송 제품 처리와 관련 없는 문장입니다.',
+    'shipping': '이것은 배송과 관계 있는 문장입니다.',
+    'product': '이것은 제품과 관계 있는 문장입니다.',
+    'processing': '이것은 처리와 관계 있는 문장입니다.',
+    'etc': '이것은 배송, 제품, 처리와 관계가 없는 문장입니다.',
 }
 
 scl_label_table = {

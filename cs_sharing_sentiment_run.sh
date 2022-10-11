@@ -16,11 +16,11 @@ python3 train.py \
   --write_summary \
   --device 0 \
   --method efl_scl \
-  --output_path ./model/saved_model/sentiment_model_9_1 \
+  --output_path ./model/saved_model/sentiment_model_7_3 \
   --model_name_or_path ./model/checkpoint-2000000 \
   --vocab_path ./tokenizer/version_1.9 \
-  --path_to_train_data ./data/preprocessed/sentiment_train_1005.csv \
-  --path_to_valid_data ./data/preprocessed/sentiment_valid_1005.csv \
+  --path_to_train_data ./data/preprocessed/sentiment_train_ver2.csv \
+  --path_to_valid_data ./data/preprocessed/sentiment_valid_ver2.csv \
   --max_len 256 \
   --batch_size 32 \
   --lr ${lr} \
@@ -29,7 +29,7 @@ python3 train.py \
   --epochs 10 \
   --pooler_option cls \
   --eval_steps 100 \
-  --tensorboard_dir tensorboard_logs/sentiment_model_9_1 \
+  --tensorboard_dir tensorboard_logs/sentiment_model_7_3 \
   --warmup_ratio 0.05 \
   --temperature ${temperature} \
   --trial 0 \
