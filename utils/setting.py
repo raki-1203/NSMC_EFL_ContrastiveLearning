@@ -1,9 +1,10 @@
 import torch
 import random
 import logging
-import numpy as np
-from argparse import ArgumentParser
 import transformers
+import numpy as np
+
+from argparse import ArgumentParser
 
 
 class Arguments():
@@ -38,8 +39,7 @@ class Arguments():
         self.add_argument('--cl_weight', type=float, default=0.9)
 
     def add_data_parameters(self):
-        self.add_argument('--path_to_train_data', type=str, default='./data/cs_sharing/train')
-        self.add_argument('--path_to_valid_data', type=str, default='./data/cs_sharing/valid')
+        self.add_argument('--path_to_train_data', type=str, default='nsmc_dataset_ver1')
         self.add_argument('--tensorboard_dir', type=str, default='./tensorboard_logs')
         self.add_argument('--output_path', type=str, default='./model/saved_model')
 

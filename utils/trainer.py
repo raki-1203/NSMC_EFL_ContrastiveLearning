@@ -1,16 +1,22 @@
-from .data import get_efl_dataloader, get_std_dataloader
-from transformers import BertTokenizer
-from .model import EFLContrastiveLearningModel
+import os
+import sys
+import shutil
+import torch
+import numpy as np
+
 from torch import nn, optim
 from torch.utils.tensorboard import SummaryWriter
-from transformers import get_linear_schedule_with_warmup
-from .loss import RDropSupConLoss
+from transformers import BertTokenizer, get_linear_schedule_with_warmup
 from tqdm.auto import tqdm
-import torch
-import os
 from konlpy.tag import Mecab
-from glob import glob
-import shutil
+
+project_dir = os.path.dirname(os.path.dirname(__file__))
+sys.path.append(project_dir)
+
+from utils.data import get_efl_dataloader
+from utils.model import EFLContrastiveLearningModel
+from utils.loss import RDropSupConLoss
+from utils.label_descriptions import efl_sentiment_label_descriptions
 
 
 class Trainer():
@@ -28,10 +34,7 @@ class Trainer():
                                                        model_max_length=args.max_len)
         self.mecab = Mecab()
 
-        if 'efl' in self.args.method:
-            dataloader = get_efl_dataloader(self.args, self.tokenizer, self.mecab)
-        else:
-            dataloader = get_std_dataloader(self.args, self.tokenizer, self.mecab)
+        dataloader = get_efl_dataloader(self.args, self.tokenizer, self.mecab)
 
         self.train_dataloader = dataloader['train']
         self.valid_dataloader = dataloader['valid']
@@ -103,8 +106,8 @@ class Trainer():
             self.train_loss.update(loss.item(), self.args.batch_size)
             self.train_acc.update(acc.item() / self.args.batch_size)
 
-            if total_step % self.args.eval_steps == 0:
-                valid_acc, valid_loss = self.validate(total_step)
+            if total_step != 0 and total_step % self.args.eval_steps == 0:
+                valid_acc, valid_loss = self.validate(self.args)
                 self.model.train()
                 if self.args.write_summary:
                     self.writer.add_scalar('Loss/train', self.train_loss.avg, total_step)
@@ -123,16 +126,19 @@ class Trainer():
                     self.best_valid_acc = valid_acc
                     self.save_model(total_step)
 
-    def validate(self, step):
+    def validate(self, args):
 
         self.model.eval()
 
-        valid_iterator = tqdm(self.valid_dataloader, desc='Valid Iteration')
+        valid_loss = AverageMeter()
 
-        valid_acc = 0
-        valid_loss = 0
+        class_num = len(efl_sentiment_label_descriptions)
+
+        all_prediction_probs = []  # [total_num * class_num, 2]
+        all_labels = []  # [total_num * class_num]
 
         with torch.no_grad():
+            valid_iterator = tqdm(self.valid_dataloader, desc='Valid Iteration')
             for step, batch in enumerate(valid_iterator):
 
                 batch = {k: v.to(self.args.device) for k, v in batch.items()}
@@ -141,34 +147,35 @@ class Trainer():
                                     attention_mask=batch['attention_mask'])
 
                 logits = output['logits']
+                preds = torch.argmax(logits, dim=-1)
 
-                if 'efl' in self.args.method:
-                    preds = torch.argmax(logits[:, 1]).cpu()
+                efl_label = torch.zeros_like(batch['ce_label'])
+                efl_label[batch['ce_label'][0]] = 1
+                loss = self.supervised_loss(logits, efl_label)
 
-                    efl_label = torch.zeros_like(batch['ce_label'])
-                    efl_label[batch['ce_label'][0]] = 1
-                    loss = self.supervised_loss(logits, efl_label)
+                valid_loss.update(loss.item(), args.batch_size)
 
-                    true_label = batch['ce_label'][0].cpu()
+                all_prediction_probs.append(logits.detach().cpu().numpy())
+                all_labels.append(batch['ce_label'].detach().cpu().numpy())
 
-                    # if step == 100:
-                    #     print(self.tokenizer.decode(batch['input_ids'][0]))
-                    #     print(logits)
-                    #     print(preds.item(), true_label.item())
-                    if preds.item() == true_label.item():
-                        valid_acc += 1
+        all_labels = np.concatenate(all_labels, axis=0)
+        all_prediction_probs = np.concatenate(all_prediction_probs, axis=0)
+        all_prediction_probs = np.reshape(all_prediction_probs, (-1, class_num, 2))
 
-                    valid_loss += loss.item()
-                else:
-                    preds = torch.argmax(logits, dim=-1)
-                    loss = self.supervised_loss(logits, batch['ce_label'])
+        prediction_pos_probs = all_prediction_probs[:, :, 1]
+        prediction_pos_probs = np.reshape(prediction_pos_probs, (-1, class_num))
+        y_pred_index = np.argmax(prediction_pos_probs, axis=-1)
 
-                    acc = torch.sum(preds.cpu() == batch['ce_label'].cpu())
+        y_true_index = np.array([true_label_index for idx, true_label_index in enumerate(all_labels)
+                                 if idx % class_num == 0])
 
-                    valid_acc += acc.item() / self.args.batch_size
-                    valid_loss += loss.item()
+        total_num = len(y_true_index)
+        correct_num = (y_pred_index == y_true_index).sum()
 
-        return valid_acc / len(valid_iterator), valid_loss / len(valid_iterator)
+        valid_loss = valid_loss.avg
+        valid_acc = correct_num / total_num
+
+        return valid_acc, valid_loss
 
     def save_model(self, step):
         if self.best_model_folder:

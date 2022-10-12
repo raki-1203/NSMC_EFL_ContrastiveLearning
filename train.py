@@ -1,7 +1,5 @@
-import torch
 from utils.setting import Setting
 from utils.trainer import Trainer
-import sys
 
 if __name__ == '__main__':
 

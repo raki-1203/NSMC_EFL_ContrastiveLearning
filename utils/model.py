@@ -1,10 +1,9 @@
-from genericpath import isdir
-from pydoc import doc
-from turtle import pos
-from torch import nn
-import torch
-from transformers import AutoConfig, RobertaModel, AutoModel
 import os
+
+import torch
+
+from torch import nn
+from transformers import AutoConfig, RobertaModel, AutoModel
 
 
 class EFLContrastiveLearningModel(nn.Module):
